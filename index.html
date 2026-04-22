@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0ede8;
+    --surface: #faf9f7;
+    --border: #e2ddd8;
+    --text-primary: #1a1916;
+    --text-secondary: #6b6660;
+    --text-muted: #a09b96;
+    --present: #2d7a4f;
+    --present-bg: #edf7f1;
+    --absent: #c0392b;
+    --absent-bg: #fdf0ee;
+    --accent: #1a1916;
+    --live: #22c55e;
+    --warning: #d97706;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+
+  /* TOP NAV */
+  .topnav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .nav-brand {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-link {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+
+  .nav-link:hover { background: var(--border); color: var(--text-primary); }
+  .nav-link.active {
+    background: var(--text-primary);
+    color: white;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--present);
+    font-family: var(--mono);
+  }
+
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--live);
+    animation: pulse 1.8s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  /* MAIN */
+  .main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 32px;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .page-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .page-subtitle {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .btn-group { display: flex; gap: 8px; }
+
+  .btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    text-decoration: none;
+  }
+
+  .btn:hover { background: var(--border); border-color: #c9c4bf; }
+
+  .btn-primary {
+    background: var(--text-primary);
+    color: white;
+    border-color: var(--text-primary);
+  }
+
+  .btn-primary:hover { background: #333; border-color: #333; }
+
+  .btn svg { width: 14px; height: 14px; }
+
+  /* STAT CARDS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--border);
+    border-radius: 12px 12px 0 0;
+  }
+
+  .stat-card.present-card::before { background: var(--present); }
+  .stat-card.absent-card::before { background: var(--absent); }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    font-family: var(--mono);
+  }
+
+  .stat-value {
+    font-size: 36px;
+    font-weight: 600;
+    font-family: var(--mono);
+    line-height: 1;
+  }
+
+  .stat-card.present-card .stat-value { color: var(--present); }
+  .stat-card.absent-card .stat-value { color: var(--absent); }
+
+  .stat-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  /* LAST SCAN */
+  .scan-banner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  .scan-label { color: var(--text-muted); font-size: 13px; }
+  .scan-name { font-weight: 600; }
+  .scan-sep { color: var(--border); }
+  .scan-status-present {
+    background: var(--present-bg);
+    color: var(--present);
+    font-weight: 600;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  /* TABLE */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .table-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .table-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text-primary);
+    width: 180px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead tr {
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  th {
+    padding: 11px 20px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-family: var(--mono);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f5f2ee; }
+
+  td {
+    padding: 13px 20px;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  td.mono { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .badge-present { background: var(--present-bg); color: var(--present); }
+  .badge-absent { background: var(--absent-bg); color: var(--absent); }
+
+  .badge::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .pct-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bar-track {
+    width: 60px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--present);
+    transition: width 0.4s ease;
+  }
+
+  .bar-fill.low { background: var(--absent); }
+  .bar-fill.warn { background: var(--warning); }
+
+  .pct-text { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
+
+  .time-chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  /* DOWNLOAD SECTION */
+  .download-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .download-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .download-info p { font-size: 13px; color: var(--text-muted); }
+
+  .download-btns { display: flex; gap: 10px; }
+
+  /* FOOTER */
+  .footer-note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 24px;
+    font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <span class="nav-brand">Attendance System</span>
+  <div class="nav-actions">
+    <a href="index.html" class="nav-link active">Dashboard</a>
+    <a href="analytics.html" class="nav-link">Analytics</a>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      LIVE
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <div>
+       <div class="page-subtitle">Attendance</div>
+    </div>
+    <div class="btn-group">
+      <button class="btn" onclick="lockAttendance()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Lock Attendance
+      </button>
+      <button class="btn btn-primary" onclick="downloadCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Students</div>
+      <div class="stat-value" id="totalCount">42</div>
+      <div class="stat-sub">Enrolled this semester</div>
+    </div>
+    <div class="stat-card present-card">
+      <div class="stat-label">Present</div>
+      <div class="stat-value" id="presentCount">2</div>
+      <div class="stat-sub" id="presentPct">4.8% attendance rate</div>
+    </div>
+    <div class="stat-card absent-card">
+      <div class="stat-label">Absent</div>
+      <div class="stat-value" id="absentCount">40</div>
+      <div class="stat-sub" id="absentPct">95.2% absent today</div>
+    </div>
+  </div>
+
+  <!-- LAST SCAN -->
+  <div class="scan-banner" id="scanBanner">
+    <span class="scan-label">Last scan</span>
+    <span class="scan-name">Prakash Musmade</span>
+    <span class="scan-sep">·</span>
+    <span class="scan-label">Time: NOW</span>
+    <span class="scan-sep">·</span>
+    <span class="scan-label">Status:</span>
+    <span class="scan-status-present">Present</span>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title">Student Records</div>
+      <div class="search-box">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a09b96" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" placeholder="Search student..." oninput="filterTable(this.value)" id="searchInput">
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Roll No.</th>
+          <th>Status</th>
+          <th>Overall %</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody id="studentTable"></tbody>
+    </table>
+  </div>
+
+  <!-- DOWNLOAD SECTION -->
+  <div class="download-section">
+    <div class="download-info">
+      <h4>Export Attendance Data</h4>
+     </div>
+    <div class="download-btns">
+      <button class="btn" onclick="downloadCSV('today')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Today's CSV
+      </button>
+      <button class="btn" onclick="downloadCSV('semester')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Full Semester
+      </button>
+      <button class="btn btn-primary" onclick="downloadCSV('lowattendance')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Below 35% Report
+      </button>
+    </div>
+  </div>
+
+ </div>
+ 
+
+<script>
+  let liveStudents = [];
+
+// Store in localStorage for analytics page
+localStorage.setItem('attendanceData', JSON.stringify(students));
+
+function getPctClass(p) {
+  if (p >= 75) return '';
+  if (p >= 35) return 'warn';
+  return 'low';
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('studentTable');
+  tbody.innerHTML = data.map(s => `
+    <tr>
+      <td>${s.name}</td>
+      <td class="mono">${s.roll}</td>
+      <td><span class="badge ${s.present ? 'badge-present' : 'badge-absent'}">${s.present ? 'Present' : 'Absent'}</span></td>
+      <td>
+        <div class="pct-bar">
+          <div class="bar-track"><div class="bar-fill ${getPctClass(s.pct)}" style="width:${s.pct}%"></div></div>
+          <span class="pct-text">${s.pct}%</span>
+        </div>
+      </td>
+      <td><span class="time-chip">${s.time || '—'}</span></td>
+    </tr>
+  `).join('');
+}
+
+function filterTable(q) {
+  const filtered = students.filter(s =>
+    s.name.toLowerCase().includes(q.toLowerCase()) ||
+    s.roll.toLowerCase().includes(q.toLowerCase())
+  );
+  renderTable(filtered);
+}
+
+function updateStats() {
+  const present = students.filter(s => s.present).length;
+  const absent = students.length - present;
+  document.getElementById('totalCount').textContent = students.length;
+  document.getElementById('presentCount').textContent = present;
+  document.getElementById('absentCount').textContent = absent;
+  document.getElementById('presentPct').textContent = ((present/students.length)*100).toFixed(1) + '% attendance rate';
+  document.getElementById('absentPct').textContent = ((absent/students.length)*100).toFixed(1) + '% absent today';
+}
+
+function lockAttendance() {
+  if (confirm('Lock attendance for this session? No more changes allowed.')) {
+    document.querySelector('.live-dot').style.background = '#e5e7eb';
+    document.querySelector('.live-badge').style.color = '#9ca3af';
+    document.querySelector('.live-badge').innerHTML = '⚿ LOCKED';
+    alert('Attendance locked successfully.');
+  }
+}
+
+function downloadCSV(type = 'today') {
+  let rows, filename;
+  if (type === 'lowattendance') {
+    rows = liveStudents.filter(s => s.pct < 35);
+    filename = 'below_35_attendance.csv';
+  } else if (type === 'semester') {
+    rows = students;
+    filename = 'semester_attendance.csv';
+  } else {
+    rows = students;
+    filename = 'today_attendance.csv';
+  }
+  const header = ['Name', 'Roll No', 'Status', 'Overall %', 'Time'];
+  const csv = [header, ...rows.map(s => [
+    s.name, s.roll,
+    s.present ? 'Present' : 'Absent',
+    s.pct + '%',
+    s.time || '—'
+  ])].map(r => r.join(',')).join('\n');
+
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+}
+
+document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-IN', {
+  day: 'numeric', month: 'short', year: 'numeric'
+});
+
+function loadData() {
+  fetch('http://192.168.1.16/data')
+    .then(response => response.json())
+    .then(data => {
+
+      let html = "";
+
+      for (let i = 0; i < data.length; i++) {
+        let s = data[i];
+
+        html += `
+          <tr>
+            <td>${s.name}</td>
+            <td>${s.roll}</td>
+            <td>${s.status}</td>
+            <td>${s.pct}%</td>
+            <td>${s.time}</td>
+          </tr>
+        `;
+      }
+
+      document.getElementById("studentTable").innerHTML = html;
+    })
+    .catch(error => alert("ESP32 connection failed"));
+}
+
+setInterval(loadData, 2000);
+loadData();
+// auto refresh every 2 sec
+setInterval(loadData, 2000);
+loadData();
+</script>
+</body>
+</html>
